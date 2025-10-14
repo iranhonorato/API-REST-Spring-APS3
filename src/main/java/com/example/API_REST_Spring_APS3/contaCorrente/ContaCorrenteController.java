@@ -1,7 +1,7 @@
 package com.example.API_REST_Spring_APS3.contaCorrente;
 
 import com.example.API_REST_Spring_APS3.movimentacao.Movimentacao;
-import com.example.API_REST_Spring_APS3.usurario.UsuarioService;
+import com.example.API_REST_Spring_APS3.usuario.UsuarioService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

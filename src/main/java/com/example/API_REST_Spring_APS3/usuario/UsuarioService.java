@@ -1,4 +1,4 @@
-package com.example.API_REST_Spring_APS3.usurario;
+package com.example.API_REST_Spring_APS3.usuario;
 
 import org.mindrot.jbcrypt.BCrypt;
 // Para utilizar o import acima você precisa fazer:
@@ -9,9 +9,10 @@ import org.mindrot.jbcrypt.BCrypt;
 //</dependency>
 
 
-
-
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.UUID;
@@ -24,13 +25,19 @@ public class UsuarioService {
     private final HashMap<String, Usuario> tokensDB = new HashMap<>();
 
     public Usuario cadastrarUsuario(Usuario usuario) {
-        String password = usuario.getPassword();
-//        gensalt() gera um salt aleatório. O salt é um valor aleatório acrescentado à senha antes do hash
-//        hashpw() aplica o hash e já armazena a senha de forma segura.
-        usuario.setPassword(BCrypt.hashpw(password, BCrypt.gensalt()));
-        usuariosDB.put(usuario.getEmail(), usuario);
-        return usuario;
-    };
+
+        if (usuariosDB.containsKey(usuario.getEmail())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Usuário já cadastrado");
+        }
+
+        String plain = usuario.getPassword();
+        String hashed = BCrypt.hashpw(plain, BCrypt.gensalt());
+        Usuario stored = new Usuario(usuario.getEmail(), hashed);
+        usuariosDB.put(stored.getEmail(), stored);
+
+        // Nunca retornamos a senha em texto. Como Usuario tem password WRITE_ONLY, o hash não aparecerá nas responses.
+        return new Usuario(stored.getEmail(), null);
+    }
 
     public Collection<Usuario> listarUsuarios() {
         return usuariosDB.values();

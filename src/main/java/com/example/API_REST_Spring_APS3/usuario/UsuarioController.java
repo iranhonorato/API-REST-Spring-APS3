@@ -1,6 +1,7 @@
-package com.example.API_REST_Spring_APS3.usurario;
+package com.example.API_REST_Spring_APS3.usuario;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.Collection;
 
@@ -14,7 +15,8 @@ public class UsuarioController {
 
     @PostMapping
     public Usuario cadastrarUsuarioController(@RequestBody Usuario usuario) {
-        return usuarioService.cadastrarUsuario(usuario);
+        Usuario criado = usuarioService.cadastrarUsuario(usuario);
+        return ResponseEntity.status(201).body(criado).getBody();
     }
 
     @GetMapping
@@ -22,8 +24,8 @@ public class UsuarioController {
         return usuarioService.listarUsuarios();
     }
 
-    @PostMapping("/login")
-    public String login(@RequestBody Usuario usuario) {
-        return usuarioService.login(usuario);
+    public ResponseEntity<String> login(@RequestBody Usuario usuario) {
+        String token = usuarioService.login(usuario);
+        return ResponseEntity.ok(token);
     }
 }
