@@ -1,8 +1,18 @@
 package com.example.API_REST_Spring_APS3.cliente;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
 import java.time.LocalDate;
 
+
+
+@Entity
+@Table(name = "clientes")
 public class Cliente {
+
+    @Id
     private String nome;
     private String cpf;
     private LocalDate dataNascimento;

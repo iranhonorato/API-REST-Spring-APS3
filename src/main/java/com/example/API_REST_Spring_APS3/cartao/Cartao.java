@@ -1,14 +1,26 @@
 package com.example.API_REST_Spring_APS3.cartao;
 
+import com.example.API_REST_Spring_APS3.contaCorrente.ContaCorrente;
+import jakarta.persistence.*;
+
 import java.time.LocalDate;
 
+
+@Entity
+@Table(name = "cartoes")
 public class Cartao {
-    public enum CartaoStatus {ATIVO, CANCELADO}
+
+    @Id
     private String numeroCartao;
     private String tipo;
     private LocalDate validade;
+    public enum CartaoStatus {ATIVO, CANCELADO}
     private CartaoStatus status;
 
+
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "conta_corrente_numero")
+    private ContaCorrente contaCorrente;
 
     public Cartao() {}
 

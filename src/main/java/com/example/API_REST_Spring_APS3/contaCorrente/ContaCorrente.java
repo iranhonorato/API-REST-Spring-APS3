@@ -3,6 +3,7 @@ package com.example.API_REST_Spring_APS3.contaCorrente;
 import com.example.API_REST_Spring_APS3.cartao.Cartao;
 import com.example.API_REST_Spring_APS3.cliente.Cliente;
 import com.example.API_REST_Spring_APS3.movimentacao.Movimentacao;
+import jakarta.persistence.*;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -10,13 +11,25 @@ import java.util.ArrayList;
 import static com.example.API_REST_Spring_APS3.movimentacao.Movimentacao.TipoMovimentacao.DEPOSITO;
 import static com.example.API_REST_Spring_APS3.movimentacao.Movimentacao.TipoMovimentacao.SAQUE;
 
+
+@Entity
+@Table(name = "contas")
 public class ContaCorrente {
+
+    @Id
     private String agencia;
     private String conta;
     private Float saldo;
     private Float limite;
+
+    @ManyToOne(optional = false, cascade = CascadeType.ALL)
+    @JoinColumn(name = "cliente_cpf")
     private Cliente cliente;
+
+    @OneToMany(mappedBy = "contaCorrente", cascade = CascadeType.ALL, orphanRemoval = true)
     private final ArrayList<Movimentacao> movimentacoes = new ArrayList<>(); // N Movimentações para cada Conta Corrente
+
+    @OneToMany(mappedBy = "contaCorrente", cascade = CascadeType.ALL, orphanRemoval = true)
     private final ArrayList<Cartao> cartoes = new ArrayList<>(); // N Cartões para cada Conta Corrente
 
 
