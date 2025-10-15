@@ -1,49 +1,48 @@
 package com.example.API_REST_Spring_APS3.cartao;
 
-//Cliente → envia requisição HTTP → Controller
-//Controller → chama métodos → Service
-//Service → usa/gera dados → Model (Autor)
-//Service → retorna resultado → Controller
-//Controller → devolve JSON → Cliente
-
-
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 
-//Service = regra de negócio.
 @Service
 public class CartaoService {
-    // Banco de dados em memória
-    private final Map<String, Cartao> cartoes = new HashMap<>();
+
+    private final CartaoRepository cartaoRepository;
+
+    public CartaoService(CartaoRepository cartaoRepository) {
+        this.cartaoRepository = cartaoRepository;
+    }
 
     public Collection<Cartao> listarCartoes() {
-        return cartoes.values();
+        return cartaoRepository.findAll();
     }
 
     public Cartao buscarPorNumero(String numeroCartao) {
-        return cartoes.get(numeroCartao);
+        return cartaoRepository.findById(numeroCartao)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cartão não encontrado"));
     }
 
+    @Transactional
     public Cartao salvarCartao(Cartao cartao) {
-        if (cartao.getNumeroCartao() == null || cartao.getNumeroCartao().isEmpty()) {
-            throw new IllegalArgumentException("O número do cartão não pode ser nulo ou vazio.");
-        }
-        // Verifica duplicidade
-        if (cartoes.containsKey(cartao.getNumeroCartao())) {
-            throw new IllegalArgumentException("Já existe um cartão com esse número.");
+        if (cartao.getNumeroCartao() == null || cartao.getNumeroCartao().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O número do cartão não pode ser nulo ou vazio");
         }
 
-        cartoes.put(cartao.getNumeroCartao(), cartao);
-        return cartao;
+        if (cartaoRepository.existsById(cartao.getNumeroCartao())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe um cartão com esse número");
+        }
+
+        return cartaoRepository.save(cartao);
     }
 
-
+    @Transactional
     public void deletar(String numeroCartao) {
-        cartoes.remove(numeroCartao);
-
+        if (!cartaoRepository.existsById(numeroCartao)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Cartão não encontrado");
+        }
+        cartaoRepository.deleteById(numeroCartao);
     }
-
 }
