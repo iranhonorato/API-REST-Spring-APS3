@@ -17,13 +17,20 @@ import static com.example.API_REST_Spring_APS3.movimentacao.Movimentacao.TipoMov
 public class ContaCorrente {
 
     @Id
-    private String agencia;
+    @Column(name = "conta", nullable = false)
     private String conta;
+
+    @Column(name = "agencia", nullable = false)
+    private String agencia;
+
+    @Column(name = "saldo", nullable = false)
     private Float saldo;
+
+    @Column(name = "limite", nullable = false)
     private Float limite;
 
-    @ManyToOne(optional = false, cascade = CascadeType.ALL)
-    @JoinColumn(name = "cliente_cpf")
+    @ManyToOne(optional = false, cascade = CascadeType.PERSIST)
+    @JoinColumn(name = "cliente_cpf", nullable = false)
     private Cliente cliente;
 
     @OneToMany(mappedBy = "contaCorrente", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -65,23 +72,26 @@ public class ContaCorrente {
 
         // Verifica se o valor é válido
         if (valor == null || valor < 0) {
+            throw new IllegalArgumentException("Valor de saque inválido");
 
             // Verifica se o novo saldo está dentro do limite permitido da conta
-        } else if (novoSaldo >= -this.limite) {
+        } else if (novoSaldo < -this.limite) {
+            throw new IllegalArgumentException("Saldo insuficiente");
+        }
+
             // Adiciona movimentacao à lista
             Movimentacao movimentacao = new Movimentacao(valor, LocalDate.now(), SAQUE);
             this.movimentacoes.add(movimentacao);
 
             // Atualiza saldo
             this.saldo = novoSaldo;
-        }
     }
 
     public void deposito(Float valor)    {
 
         // Verifica se o valor é válido
         if (valor == null || valor < 0) {
-            return;
+            throw new IllegalArgumentException("Valor de depósito inválido");
 
         } else {
             // Adiciona movimentação à lista

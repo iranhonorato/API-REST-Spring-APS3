@@ -12,14 +12,21 @@ public class Cartao {
 
     @Id
     private String numeroCartao;
-    private String tipo;
-    private LocalDate validade;
-    public enum CartaoStatus {ATIVO, CANCELADO}
-    private CartaoStatus status;
 
+    @Column(nullable = false)
+    private String tipo;
+
+    @Column(nullable = false)
+    private LocalDate validade;
+
+    public enum CartaoStatus { ATIVO, CANCELADO }
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private CartaoStatus status = CartaoStatus.ATIVO;
 
     @ManyToOne(optional = false)
-    @JoinColumn(name = "conta_corrente_numero")
+    @JoinColumn(name = "conta_corrente_numero", nullable = false)
     private ContaCorrente contaCorrente;
 
     public Cartao() {}
@@ -46,9 +53,9 @@ public class Cartao {
     public void setStatus(CartaoStatus status) {this.status = status;}
 
 
-    public Boolean isExpired() {
-        return LocalDate.now().isAfter(this.validade);
-    };
+    public boolean isExpired() {
+        return validade != null && LocalDate.now().isAfter(validade);
+    }
 
     public Boolean cancelaCartao() {
         if (this.status == CartaoStatus.ATIVO) {
