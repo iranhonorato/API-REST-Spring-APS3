@@ -1,30 +1,26 @@
 package com.example.API_REST_Spring_APS3.usuario;
 
 import org.mindrot.jbcrypt.BCrypt;
-// Para utilizar o import acima você precisa fazer:
-//<dependency>
-//        <groupId>org.mindrot</groupId>
-//        <artifactId>jbcrypt</artifactId>
-//        <version>0.4</version>
-//</dependency>
-
-
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
-
-
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class UsuarioService {
-    private final HashMap<String, Usuario> usuariosDB = new HashMap<>();
-    private final HashMap<String, Usuario> tokensDB = new HashMap<>();
+
+    // armazenamento em memória (para produção troque por JPA + repositorio)
+    private final Map<String, Usuario> usuariosDB = new ConcurrentHashMap<>(); // key = email -> Usuario (password hashed)
+    private final Map<String, Usuario> tokensDB = new ConcurrentHashMap<>();   // key = token -> Usuario (sem senha)
 
     public Usuario cadastrarUsuario(Usuario usuario) {
+        if (usuario == null || usuario.getEmail() == null || usuario.getPassword() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email e senha são obrigatórios");
+        }
 
         if (usuariosDB.containsKey(usuario.getEmail())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Usuário já cadastrado");
@@ -35,41 +31,48 @@ public class UsuarioService {
         Usuario stored = new Usuario(usuario.getEmail(), hashed);
         usuariosDB.put(stored.getEmail(), stored);
 
-        // Nunca retornamos a senha em texto. Como Usuario tem password WRITE_ONLY, o hash não aparecerá nas responses.
+        // Nunca retornamos a senha (mesmo hash) na resposta: retornamos um DTO com password = null
         return new Usuario(stored.getEmail(), null);
     }
 
     public Collection<Usuario> listarUsuarios() {
-        return usuariosDB.values();
-    };
-
+        // retorna cópias sem senha para não vazar hashes
+        return usuariosDB.values().stream()
+                .map(u -> new Usuario(u.getEmail(), null))
+                .toList();
+    }
 
     public String login(Usuario usuario) {
-        Usuario userDB = usuariosDB.get(usuario.getEmail());
-
-
-//        BCrypt.checkpw(senhaDigitada, senhaArmazenada);
-        if (BCrypt.checkpw(usuario.getPassword(), userDB.getPassword())) {
-//            O BCrypt sabe verificar se a senha digitada gera o mesmo hash (considerando o salt).
-//            Se bater, a senha está correta.
-
-            String token = UUID.randomUUID().toString();
-            tokensDB.put(token, usuario);
-            return token;
+        if (usuario == null || usuario.getEmail() == null || usuario.getPassword() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email e senha são obrigatórios");
         }
-        throw new RuntimeException("Usuário ou senha inválidos");
-    }
 
+        Usuario userDB = usuariosDB.get(usuario.getEmail());
+        if (userDB == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuário ou senha inválidos");
+        }
+
+        boolean ok = BCrypt.checkpw(usuario.getPassword(), userDB.getPassword());
+        if (!ok) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuário ou senha inválidos");
+        }
+
+        String token = UUID.randomUUID().toString();
+        // guarde apenas info não-sensível (email) associada ao token
+        tokensDB.put(token, new Usuario(userDB.getEmail(), null));
+        return token;
+    }
 
     public Usuario validarToken(String token) {
-        Usuario usuario = tokensDB.get(token);
-
-        if (usuario == null) {
-            throw new RuntimeException("Token Inválido");
+        if (token == null || token.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token ausente");
         }
-        return usuario;
+        Usuario usuario = tokensDB.get(token);
+        if (usuario == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token inválido");
+        }
+        return usuario; // retorna email (sem senha)
     }
-
 
 
 }
